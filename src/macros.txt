@@ -1,0 +1,274 @@
+showDS macro
+	mov ax,@data
+	mov ds,ax
+	mov es,ax
+endm
+increment macro string
+	;registerPush
+	xor si,si
+	mov tempStr4[si],'1'
+	inc si
+	mov tempStr4[si],'$'
+	
+	copyString string,str1
+	copyString tempStr4,str2
+	call addproc
+	copyString str3,string
+	;registerPop
+endm
+clearAll macro
+	clearString str1
+	clearString str2
+	clearString str3
+	clearString tempStr1
+	clearString tempStr2
+	clearString tempStr3
+	clearString X
+	clearString Y
+	clearString Z
+	clearString temp
+	mov count ,0
+	mov carry,0
+	mov multiplier ,0
+	mov len,0
+	mov length_x,0
+	mov length_y,0
+	mov minus,0
+	mov sign,0
+endm
+clearString macro string
+	local top12,exit12
+	registerPush
+	;debug
+	mov bx,0
+	top12:
+		mov string[bx],'0'
+		cmp bx,MAX
+		je exit12
+		inc bx
+		jmp top12
+	exit12:
+	registerPop
+endm
+takeSign macro
+	registerPush
+	mov ah,1
+	int 21h
+	
+	mov sign,al
+	;printNewLine
+	
+	mov ah,1
+	int 21h
+	printNewLine
+	registerPop
+endm
+removeZero macro string
+	local top11,break11,down11
+	registerPush
+	reverseString string,temp
+	
+	mov bx,0
+	top11:
+		cmp string[bx],'$'
+		je break11
+		inc bx
+		jmp top11
+	break11:
+		dec bx
+		cmp bx,0
+		je down11
+		cmp string[bx],'0'
+		;jne down
+		je break11
+	down11:
+	inc bx
+	mov len,bl
+	mov string[bx],'$'
+	
+	reverseString string,temp
+	registerPop
+endm
+copyString macro string1,string2
+	local top10
+	registerPush
+	mov bx,0
+	top10:
+	mov al,string1[bx]
+	mov string2[bx],al
+	inc bx
+	cmp al,'$'
+	jne top10
+	registerPop
+endm
+shiftProduct macro string,amount
+	registerPush
+	reverseString string,tempStrm3
+	mov bx,0
+	top1:
+		mov al,string[bx]
+		cmp al,'$'
+		je break2
+		inc bx
+		jmp top1
+	break2:
+	top2:
+		cmp amount,0
+		je break3
+		mov string[bx],'0'
+		inc bx
+		dec amount
+		jmp top2
+	break3:
+	mov string[bx],'$'
+	reverseString string,tempStrm3
+	
+	registerPop
+endm
+reverseString macro string1,string2
+	local top4,break4,exit4,top5,breakz
+	registerPush
+	push si
+	
+	mov bx,0
+	mov si,0
+	top4:
+		cmp string1[bx],'$'
+		je break4
+		inc bx
+		jmp top4
+	break4:
+		dec bx
+	breakz:	
+		cmp bx,0
+		jl exit4
+		mov al,string1[bx]
+		mov string2[si],al
+		inc si
+		dec bx
+		
+		jmp breakz
+	exit4:
+	mov string2[si],'$'
+	inc bx
+	top5:
+		mov al,string2[bx]
+		mov string1[bx],al
+		inc bx
+		cmp al,'$'
+		jne top5
+	
+	pop si
+	registerPop
+endm
+registerPush macro
+	push ax
+	push bx
+	push cx
+	push dx
+endm
+registerPop macro
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+endm
+multiply macro string,multiplier,product
+	local top1,bottom1,break1
+	registerPush
+
+	mov cx,0
+	mov bx,0
+	
+	top1:
+	mov al,multiplier
+	mov dl,string[bx]
+	cmp dl,'$'
+	je break1
+	sub dl,48
+	mul dl  	;dl=multiplier ,al=multiplicand,ax=product
+	add al,cl 	;cx=carry
+	mov dh,10
+	div dh		;dh=divisor ,ax=divdand,al=quotinent,ah=remainder
+	add ah,48  	;char conversion
+	mov product[bx],ah
+	mov cl,al
+	inc bx
+	jmp top1
+	break1:
+	cmp cl,0
+	je bottom1
+	add cl,48
+	mov product[bx],cl
+	inc bx
+	bottom1:
+	mov product[bx],'$'
+	
+	registerPop
+endm
+
+returnDos macro
+	mov ah,4ch
+	int 21h
+endm
+printNewline macro
+	push ax
+	push dx
+	
+	mov ah,2
+	mov dl,LF
+	int 21h
+	mov dl,CR
+	int 21h
+	
+	pop dx
+	pop ax
+endm
+takeString macro string1,string2,count1
+	local exit,while1
+	lea si,string1
+	lea di,string2
+	
+	mov count1,0
+	while1:
+		lodsb
+		cmp al,'$'
+		je exit
+		dec si
+		movsb
+		inc count1
+		jmp while1
+	exit:
+		;mov al,'$'
+		;lodsb
+		;printNewline
+endm
+printString macro string
+	local while2,exit2
+	cld
+	lea si,string
+	while2:
+		lodsb
+		cmp al,'$'
+		je exit2
+		mov dl,al
+		mov ah,2
+		int 21h
+		jmp while2
+	exit2:
+endm
+takeStringD macro string
+	local exit,while1
+	lea di,string
+	
+	mov ah,1
+	while1:
+		int 21h
+		cmp al,CR
+		je exit
+		stosb
+		jmp while1
+	exit:
+		mov al,'$'
+		stosb
+endm	
